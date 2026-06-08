@@ -25,6 +25,7 @@
 #include <sys/vfs.h>
 #include <unistd.h>
 
+#include <algorithm>
 #include <array>
 #include <chrono>
 #include <string>
@@ -289,7 +290,11 @@ binder::Status GsiService::enableGsi(bool one_shot, const std::string& dsuSlot, 
             *_aidl_return = INSTALL_OK;
         }
     } else {
-        ENFORCE_SYSTEM_OR_SHELL;
+        if (android::base::EndsWith(dsuSlot, ".lock")) {
+            ENFORCE_SYSTEM;
+        } else {
+            ENFORCE_SYSTEM_OR_SHELL;
+        }
         *_aidl_return = ReenableGsi(one_shot);
     }
 
