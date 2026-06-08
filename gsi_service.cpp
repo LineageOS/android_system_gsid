@@ -20,6 +20,7 @@
 #include <sys/vfs.h>
 #include <unistd.h>
 
+#include <algorithm>
 #include <array>
 #include <chrono>
 #include <string>
@@ -314,7 +315,11 @@ binder::Status GsiService::setGsiAshmem(const ::android::os::ParcelFileDescripto
 
 binder::Status GsiService::enableGsiAsync(bool one_shot, const std::string& dsuSlot,
                                           const sp<IGsiServiceCallback>& resultCallback) {
-    ENFORCE_SYSTEM_OR_SHELL;
+    if (android::base::EndsWith(dsuSlot, ".lock")) {
+        ENFORCE_SYSTEM;
+    } else {
+        ENFORCE_SYSTEM_OR_SHELL;
+    }
     std::lock_guard<std::mutex> guard(lock_);
 
     const auto result = EnableGsi(one_shot, dsuSlot);
@@ -323,7 +328,11 @@ binder::Status GsiService::enableGsiAsync(bool one_shot, const std::string& dsuS
 }
 
 binder::Status GsiService::enableGsi(bool one_shot, const std::string& dsuSlot, int* _aidl_return) {
-    ENFORCE_SYSTEM_OR_SHELL;
+    if (android::base::EndsWith(dsuSlot, ".lock")) {
+        ENFORCE_SYSTEM;
+    } else {
+        ENFORCE_SYSTEM_OR_SHELL;
+    }
     std::lock_guard<std::mutex> guard(lock_);
 
     *_aidl_return = EnableGsi(one_shot, dsuSlot);
@@ -987,6 +996,12 @@ bool GsiService::RemoveGsiFiles(const std::string& install_dir) {
 }
 
 int GsiService::EnableGsi(bool one_shot, const std::string& dsu_slot) {
+    auto installed_slots = GetInstalledDsuSlots();
+    if (std::find(installed_slots.begin(), installed_slots.end(), dsu_slot) ==
+        installed_slots.end()) {
+        LOG(ERROR) << "DSU slot " << dsu_slot << " is not installed";
+        return IGsiService::INSTALL_ERROR_GENERIC;
+    }
     if (!android::gsi::IsGsiInstalled()) {
         LOG(ERROR) << "no gsi installed - cannot enable";
         return IGsiService::INSTALL_ERROR_GENERIC;
