@@ -25,6 +25,7 @@
 #include <sys/vfs.h>
 #include <unistd.h>
 
+#include <algorithm>
 #include <array>
 #include <chrono>
 #include <string>
@@ -273,6 +274,13 @@ binder::Status GsiService::enableGsiAsync(bool one_shot, const std::string& dsuS
 binder::Status GsiService::enableGsi(bool one_shot, const std::string& dsuSlot, int* _aidl_return) {
     std::lock_guard<std::mutex> guard(lock_);
 
+    auto installed_slots = GetInstalledDsuSlots();
+    if (std::find(installed_slots.begin(), installed_slots.end(), dsuSlot) ==
+        installed_slots.end()) {
+        LOG(ERROR) << "DSU slot " << dsuSlot << " is not installed";
+        *_aidl_return = IGsiService::INSTALL_ERROR_GENERIC;
+        return binder::Status::ok();
+    }
     if (!WriteStringToFile(dsuSlot, kDsuActiveFile)) {
         PLOG(ERROR) << "write failed: " << GetDsuSlot(install_dir_);
         *_aidl_return = INSTALL_ERROR_GENERIC;
