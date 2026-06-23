@@ -173,6 +173,12 @@ binder::Status GsiService::closeInstall(int* _aidl_return) {
     ENFORCE_SYSTEM;
     std::lock_guard<std::mutex> guard(lock_);
 
+    if (installer_ == nullptr) {
+        LOG(ERROR) << "no active installation to close";
+        *_aidl_return = IGsiService::INSTALL_ERROR_GENERIC;
+        return binder::Status::ok();
+    }
+
     installer_ = {};
 
     auto dsu_slot = GetDsuSlot(install_dir_);
