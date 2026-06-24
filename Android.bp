@@ -152,6 +152,20 @@ cc_binary {
     ],
 }
 
+cc_test {
+    name: "gsi_service_unit_test",
+    defaults: [
+        "gsid_defaults",
+    ],
+    srcs: [
+        "tests/gsi_service_unit_test.cpp",
+    ],
+    test_suites: [
+        "general-tests",
+        "device-tests",
+    ],
+}
+
 aidl_interface {
     name: "gsi_aidl_interface",
     unstable: true,

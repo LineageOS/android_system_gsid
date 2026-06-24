@@ -155,11 +155,6 @@ binder::Status GsiService::openInstall(const std::string& install_dir, int* _aid
     }
     std::string message;
     auto dsu_slot = GetDsuSlot(working_install_dir);
-    if (!IsValidSlotName(dsu_slot)) {
-        LOG(ERROR) << "Invalid DSU slot name: " << dsu_slot;
-        *_aidl_return = IGsiService::INSTALL_ERROR_GENERIC;
-        return binder::Status::ok();
-    }
     install_dir_ = std::move(working_install_dir);
     if (!RemoveFileIfExists(GetCompleteIndication(dsu_slot), &message)) {
         LOG(ERROR) << message;
@@ -216,6 +211,11 @@ binder::Status GsiService::createPartition(const ::std::string& name, int64_t si
 
     if (install_dir_.empty()) {
         PLOG(ERROR) << "open is required for createPartition";
+        *_aidl_return = INSTALL_ERROR_GENERIC;
+        return binder::Status::ok();
+    }
+    if (!IsValidSlotName(name)) {
+        LOG(ERROR) << "Invalid partition name: " << name;
         *_aidl_return = INSTALL_ERROR_GENERIC;
         return binder::Status::ok();
     }
@@ -944,8 +944,22 @@ int GsiService::ValidateInstallParams(std::string& install_dir) {
             LOG(ERROR) << "cannot install GSIs to external media if verity uses check_at_most_once";
             return INSTALL_ERROR_GENERIC;
         }
-    } else if (!android::base::StartsWith(install_dir, kDefaultDsuImageFolder)) {
+    } else if (android::base::StartsWith(install_dir, kDefaultDsuImageFolder)) {
+        std::string rel_path = install_dir.substr(strlen(kDefaultDsuImageFolder));
+        if (android::base::EndsWith(rel_path, "/")) {
+            rel_path.pop_back();
+        }
+        if (!IsValidSlotName(rel_path)) {
+            LOG(ERROR) << "cannot install DSU to invalid slot path: " << install_dir;
+            return INSTALL_ERROR_GENERIC;
+        }
+    } else {
         LOG(ERROR) << "cannot install DSU to " << install_dir;
+        return INSTALL_ERROR_GENERIC;
+    }
+    auto dsu_slot = GetDsuSlot(install_dir);
+    if (!IsValidSlotName(dsu_slot)) {
+        LOG(ERROR) << "Invalid DSU slot name: " << dsu_slot;
         return INSTALL_ERROR_GENERIC;
     }
     return INSTALL_OK;
@@ -1037,6 +1051,10 @@ bool GsiService::RemoveGsiFiles(const std::string& install_dir) {
 }
 
 int GsiService::EnableGsi(bool one_shot, const std::string& dsu_slot) {
+    if (!IsValidSlotName(dsu_slot)) {
+        LOG(ERROR) << "Invalid DSU slot name: " << dsu_slot;
+        return IGsiService::INSTALL_ERROR_GENERIC;
+    }
     auto installed_slots = GetInstalledDsuSlots();
     if (std::find(installed_slots.begin(), installed_slots.end(), dsu_slot) ==
         installed_slots.end()) {
