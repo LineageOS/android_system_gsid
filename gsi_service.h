@@ -90,6 +90,7 @@ class GsiService : public BinderService<GsiService>, public BnGsiService {
 
   private:
     friend class ImageService;
+    friend class GsiServiceTest;
 
     static int ValidateInstallParams(std::string& install_dir);
     int EnableGsi(bool one_shot, const std::string& dsu_slot);

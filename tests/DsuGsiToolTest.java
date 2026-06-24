@@ -117,7 +117,7 @@ public class DsuGsiToolTest extends DsuTestBase {
     @Test
     public void testInvalidSlotNames() throws DeviceNotAvailableException {
         assertAdbRoot();
-        String[] invalidSlots = {".", "..", "booted", "active", "foo@bar"};
+        String[] invalidSlots = {".", "..", "booted", "active", "foo@bar", "foo/bar", "A/B.lock"};
         for (String slot : invalidSlots) {
             String installDir = "/data/gsi/dsu/" + slot;
             // We need to provide a dummy size > 0 to pass argument validation in gsi_tool

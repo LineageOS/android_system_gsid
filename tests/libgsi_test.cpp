@@ -45,6 +45,8 @@ TEST(LibGsiTest, IsValidSlotName) {
 
     EXPECT_FALSE(IsValidSlotName("foo/bar"));
     EXPECT_FALSE(IsValidSlotName("foo@bar"));
+    EXPECT_FALSE(IsValidSlotName("foo/bar.lock"));
+    EXPECT_TRUE(IsValidSlotName("dsu.lock"));
 }
 
 TEST(LibGsiTest, IsGsiRunning) {
